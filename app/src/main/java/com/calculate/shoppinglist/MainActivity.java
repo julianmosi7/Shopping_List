@@ -15,6 +15,7 @@ import android.widget.ListView;
 import android.widget.NumberPicker;
 import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     public ListView listView;
     public List<Store> storesList = new ArrayList();
     public List<Position> positionsList = new ArrayList();
+    public int currentStore;
 
     public ArrayAdapter<Position> positionsAdapter;
     public SpinnerAdapter storeAdapter;
@@ -43,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 positionsList.addAll(storesList.get(position).getPosition());
+                currentStore = position;
             }
 
             @Override
@@ -71,16 +74,16 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
         switch (id){
             case R.id.menu_addPosition:
-                dialog();
+                dialog_position();
                 break;
             case R.id.menu_addStore:
-                //dialog
+                dialog_store();
                 break;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    private void dialog(){
+    private void dialog_position(){
         final View vDialog = getLayoutInflater().inflate(R.layout.dialog_position, null);
         AlertDialog.Builder alert = new AlertDialog.Builder(this);
         alert.setMessage("add new Position");
@@ -91,7 +94,14 @@ public class MainActivity extends AppCompatActivity {
         alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                //add
+                try{
+                    Position pos = new Position(txtposition.getText().toString(), numberPicker.getValue());
+                    storesList.get(currentStore).addItem(pos);
+                }catch(IndexOutOfBoundsException ex){
+                    ex.printStackTrace();
+                    Toast.makeText(getApplicationContext(), "No Store selected", Toast.LENGTH_LONG).show();
+                }
+
             }
         });
         alert.setNegativeButton("cancel", new DialogInterface.OnClickListener() {
@@ -100,7 +110,12 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
         alert.show();
+
+    }
+
+    private void dialog_store(){
 
     }
 

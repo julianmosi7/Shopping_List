@@ -27,6 +27,10 @@ public class Store {
         this.position = position;
     }
 
+    public void addItem(Position pos){
+        position.add(pos);
+    }
+
     public String toString(){
         return name;
     }

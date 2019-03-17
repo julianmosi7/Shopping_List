@@ -5,8 +5,8 @@ public class Position {
     public String name;
     public double pieces;
 
-    public Position(int ID, String name, double pieces) {
-        this.ID = ID;
+    public Position(String name, double pieces) {
+        this.ID = ID++;
         this.name = name;
         this.pieces = pieces;
     }
