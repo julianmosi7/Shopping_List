@@ -1,14 +1,14 @@
 package com.calculate.shoppinglist;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Store {
     public String name;
-    public List<Position> position;
+    public List<Position> position = new ArrayList<>();
 
-    public Store(String name, List position) {
+    public Store(String name) {
         this.name = name;
-        this.position = position;
     }
 
     public String getName() {

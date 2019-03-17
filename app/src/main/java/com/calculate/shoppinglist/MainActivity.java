@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
     public int currentStore;
 
     public ArrayAdapter<Position> positionsAdapter;
-    public SpinnerAdapter storeAdapter;
+    public ArrayAdapter<Store> storeAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +44,10 @@ public class MainActivity extends AppCompatActivity {
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                positionsList.addAll(storesList.get(position).getPosition());
+                positionsList.clear();
+                if(storesList.get(position).getPosition() != null){
+                    positionsList.addAll(storesList.get(position).getPosition());
+                }
                 currentStore = position;
             }
 
@@ -97,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
                 try{
                     Position pos = new Position(txtposition.getText().toString(), numberPicker.getValue());
                     storesList.get(currentStore).addItem(pos);
+                    positionsAdapter.notifyDataSetChanged();
                 }catch(IndexOutOfBoundsException ex){
                     ex.printStackTrace();
                     Toast.makeText(getApplicationContext(), "No Store selected", Toast.LENGTH_LONG).show();
@@ -116,6 +120,30 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void dialog_store(){
+        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+        alert.setMessage("add new Store");
+        final EditText txtstorename = new EditText(this);
+        alert.setView(txtstorename);
+
+        alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Store store = new Store(txtstorename.getText().toString());
+                storesList.add(store);
+                storeAdapter.notifyDataSetChanged();
+
+            }
+        });
+        alert.setNegativeButton("cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+            }
+        });
+
+        alert.show();
+
+
 
     }
 
