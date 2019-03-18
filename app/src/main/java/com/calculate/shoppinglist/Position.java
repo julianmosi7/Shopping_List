@@ -1,12 +1,14 @@
 package com.calculate.shoppinglist;
 
 public class Position {
+    static int number = 0;
     public int ID;
     public String name;
     public double pieces;
 
     public Position(String name, double pieces) {
-        this.ID = ID++;
+        number++;
+        this.ID = number;
         this.name = name;
         this.pieces = pieces;
     }

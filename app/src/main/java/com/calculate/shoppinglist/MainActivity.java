@@ -45,10 +45,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 positionsList.clear();
+                positionsAdapter.notifyDataSetChanged();
                 if(storesList.get(position).getPosition() != null){
-                    positionsList.addAll(storesList.get(position).getPosition());
-                }
+                    toList(position);
+                }                
                 currentStore = position;
+                for (Position pos :
+                     positionsList) {
+                    System.out.println(pos.toString());
+                }
             }
 
             @Override
@@ -86,6 +91,11 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    private void toList(int position){
+        positionsList.clear();
+        positionsList.addAll(storesList.get(position).getPosition());
+    }
+
     private void dialog_position(){
         final View vDialog = getLayoutInflater().inflate(R.layout.dialog_position, null);
         AlertDialog.Builder alert = new AlertDialog.Builder(this);
@@ -100,7 +110,9 @@ public class MainActivity extends AppCompatActivity {
                 try{
                     Position pos = new Position(txtposition.getText().toString(), numberPicker.getValue());
                     storesList.get(currentStore).addItem(pos);
+                    toList(currentStore);
                     positionsAdapter.notifyDataSetChanged();
+                    Toast.makeText(getApplicationContext(), "Position added", Toast.LENGTH_LONG).show();
                 }catch(IndexOutOfBoundsException ex){
                     ex.printStackTrace();
                     Toast.makeText(getApplicationContext(), "No Store selected", Toast.LENGTH_LONG).show();
@@ -131,7 +143,6 @@ public class MainActivity extends AppCompatActivity {
                 Store store = new Store(txtstorename.getText().toString());
                 storesList.add(store);
                 storeAdapter.notifyDataSetChanged();
-
             }
         });
         alert.setNegativeButton("cancel", new DialogInterface.OnClickListener() {
