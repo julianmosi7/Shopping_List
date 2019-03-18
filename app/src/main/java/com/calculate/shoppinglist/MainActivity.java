@@ -1,9 +1,12 @@
 package com.calculate.shoppinglist;
 
 import android.content.DialogInterface;
+import android.os.Environment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -17,6 +20,16 @@ import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +53,10 @@ public class MainActivity extends AppCompatActivity {
 
         initCombo(spinner);
         bindAdapterToListView(listView);
+
+        registerForContextMenu(listView);
+        isJSONavailable("shoppingList");
+
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -112,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
                     storesList.get(currentStore).addItem(pos);
                     toList(currentStore);
                     positionsAdapter.notifyDataSetChanged();
+                    writeToFile("shoppingList");
                     Toast.makeText(getApplicationContext(), "Position added", Toast.LENGTH_LONG).show();
                 }catch(IndexOutOfBoundsException ex){
                     ex.printStackTrace();
@@ -143,6 +161,7 @@ public class MainActivity extends AppCompatActivity {
                 Store store = new Store(txtstorename.getText().toString());
                 storesList.add(store);
                 storeAdapter.notifyDataSetChanged();
+                writeToFile("shoppingList");
             }
         });
         alert.setNegativeButton("cancel", new DialogInterface.OnClickListener() {
@@ -158,6 +177,79 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo){
+        getMenuInflater().inflate(R.menu.contextmenue, menu);
+        super.onCreateContextMenu(menu, v, menuInfo);
+    }
+
+    public boolean onContextItemSelected(MenuItem item){
+        if(item.getItemId() == R.id.context_delete){
+            AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+            String name = "";
+            if(info != null){
+                long id = info.id;
+                int pos = info.position;
+                storesList.get(currentStore).getPosition().remove(pos);
+                positionsList.remove(pos);
+                positionsAdapter.notifyDataSetChanged();
+            }
+            return true;
+        }
+        return super.onContextItemSelected(item);
+    }
+
+    private void writeToFile(String filename) {
+        GsonBuilder builder = new GsonBuilder();
+        Gson gson = builder.create();
+        String state = Environment.getExternalStorageState();
+        if (!state.equals(Environment.MEDIA_MOUNTED)) return;
+        File outFile = Environment.getExternalStorageDirectory();
+        String path = outFile.getAbsolutePath();
+        String fullPath = path + File.separator + filename;
+        System.out.println(fullPath);
+        System.out.println("-----");
+        try {
+            PrintWriter out = new PrintWriter((new OutputStreamWriter(new FileOutputStream(fullPath))));
+            String sJson = gson.toJson(storesList);
+            Toast.makeText(this, sJson, Toast.LENGTH_LONG).show();
+            out.write(sJson);
+            out.flush();
+            out.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+
+        }
+    }
 
 
-}
+        private void isJSONavailable(String filename){
+            String sJson = "";
+            String state = Environment.getExternalStorageState();
+            if(!state.equals(Environment.MEDIA_MOUNTED)) return;
+            File inFile = Environment.getExternalStorageDirectory();
+            String path = inFile.getAbsolutePath();
+            String fullPath = path + File.separator + filename;
+            System.out.println("-----");
+            System.out.println(fullPath);
+
+            try{
+                BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(fullPath)));
+                sJson = in.readLine();
+                in.close();
+
+                Gson gson = new Gson();
+                Store store = gson.fromJson(sJson, Store.class);
+                Toast.makeText(this, store.getPosition().toString(), Toast.LENGTH_LONG).show();
+
+            }catch(Exception e){
+                e.printStackTrace();
+                Toast.makeText(this, "No Shopping-List available yet", Toast.LENGTH_LONG).show();
+
+            }
+
+        }
+    }
+
+
+
+
