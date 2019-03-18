@@ -108,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 try{
-                    Position pos = new Position(txtposition.getText().toString(), numberPicker.getValue());
+                    Position pos = new Position(storesList.get(currentStore).getPosition().size()+1, txtposition.getText().toString(), numberPicker.getValue());
                     storesList.get(currentStore).addItem(pos);
                     toList(currentStore);
                     positionsAdapter.notifyDataSetChanged();
