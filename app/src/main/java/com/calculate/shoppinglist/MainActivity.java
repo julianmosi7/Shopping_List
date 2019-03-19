@@ -1,7 +1,11 @@
 package com.calculate.shoppinglist;
 
+import android.Manifest;
 import android.content.DialogInterface;
+import android.content.pm.PackageManager;
 import android.os.Environment;
+import android.support.annotation.NonNull;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -39,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     public List<Store> storesList = new ArrayList();
     public List<Position> positionsList = new ArrayList();
     public int currentStore;
+    private static final int RQ_WRITE_STORAGE = 12345;
 
     public ArrayAdapter<Position> positionsAdapter;
     public ArrayAdapter<Store> storeAdapter;
@@ -247,6 +252,26 @@ public class MainActivity extends AppCompatActivity {
 
             }
 
+        }
+
+        public void printInput(View view){
+        if(checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                !=PackageManager.PERMISSION_GRANTED){
+            requestPermissions(new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE}, RQ_WRITE_STORAGE);
+        }else{
+            writeToFile("shoppingList");
+        }
+        }
+
+        public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults){
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+            if(requestCode==RQ_WRITE_STORAGE){
+                if(grantResults.length>0 && grantResults[0]!=PackageManager.PERMISSION_GRANTED){
+                    Toast.makeText(this, "SD Card Permission denied", Toast.LENGTH_SHORT).show();
+                }else{
+                    writeToFile("shoppingList");
+                }
+            }
         }
     }
 
