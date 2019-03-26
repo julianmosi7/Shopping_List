@@ -3,29 +3,30 @@ package com.calculate.shoppinglist;
 import android.Manifest;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Environment;
 import android.support.annotation.NonNull;
-import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.NumberPicker;
 import android.widget.Spinner;
-import android.widget.SpinnerAdapter;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -44,6 +45,9 @@ public class MainActivity extends AppCompatActivity {
     public List<Position> positionsList = new ArrayList();
     public int currentStore;
     private static final int RQ_WRITE_STORAGE = 12345;
+    LocationManager locationManager;
+    private static final int RQ_ACCESS_FINE_LOCATION = 123;
+    private boolean isGpsAllowed = false;
 
     public ArrayAdapter<Position> positionsAdapter;
     public ArrayAdapter<Store> storeAdapter;
@@ -60,8 +64,10 @@ public class MainActivity extends AppCompatActivity {
         bindAdapterToListView(listView);
 
         registerForContextMenu(listView);
-        isJSONavailable("shoppingList");
 
+        registerSystemService();
+
+        checkpermissionGPS();
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -70,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
                 positionsAdapter.notifyDataSetChanged();
                 if(storesList.get(position).getPosition() != null){
                     toList(position);
-                }                
+                }
                 currentStore = position;
                 for (Position pos :
                      positionsList) {
@@ -84,6 +90,13 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+    @Override
+    protected void onStart(){
+        super.onStart();
+        isJSONavailable("shoppingList");
+    }
+
 
     private void initCombo(Spinner spinner){
         storeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, storesList);
@@ -122,8 +135,10 @@ public class MainActivity extends AppCompatActivity {
         final View vDialog = getLayoutInflater().inflate(R.layout.dialog_position, null);
         AlertDialog.Builder alert = new AlertDialog.Builder(this);
         alert.setMessage("add new Position");
-        final EditText txtposition = vDialog.findViewById(R.id.txtposition);
+        final EditText txtposition = vDialog.findViewById(R.id.storename);
         final NumberPicker numberPicker = vDialog.findViewById(R.id.numberPicker);
+        numberPicker.setMaxValue(100);
+        numberPicker.setMinValue(1);
         alert.setView(vDialog);
 
         alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -135,6 +150,14 @@ public class MainActivity extends AppCompatActivity {
                     toList(currentStore);
                     positionsAdapter.notifyDataSetChanged();
                     writeToFile("shoppingList");
+
+                    if(checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                            !=PackageManager.PERMISSION_GRANTED){
+                        requestPermissions(new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE}, RQ_WRITE_STORAGE);
+                    }else{
+                        writeToFile("shoppingList");
+                    }
+
                     Toast.makeText(getApplicationContext(), "Position added", Toast.LENGTH_LONG).show();
                 }catch(IndexOutOfBoundsException ex){
                     ex.printStackTrace();
@@ -155,20 +178,55 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void dialog_store(){
+        final View vDialog = getLayoutInflater().inflate(R.layout.dialog_store, null);
         AlertDialog.Builder alert = new AlertDialog.Builder(this);
         alert.setMessage("add new Store");
-        final EditText txtstorename = new EditText(this);
-        alert.setView(txtstorename);
+        final EditText txtstorename = vDialog.findViewById(R.id.storename);
+        final EditText txtlatitude = vDialog.findViewById(R.id.latitude);
+        final EditText txtlongitude = vDialog.findViewById(R.id.longitude);
+        final Button btn = vDialog.findViewById(R.id.coordinates_button);
+        alert.setView(vDialog);
 
-        alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                Store store = new Store(txtstorename.getText().toString());
-                storesList.add(store);
-                storeAdapter.notifyDataSetChanged();
-                writeToFile("shoppingList");
-            }
-        });
+        btn.setOnClickListener(new View.OnClickListener() {
+                                   @Override
+                                   public void onClick(View v) {
+                                       if(isGpsAllowed){
+                                           try {
+                                               Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                                               System.out.println(location);
+                                               System.out.println(location.getLatitude());
+                                               System.out.println(location.getLongitude());
+                                               txtlatitude.setText(String.valueOf(location.getLatitude()));
+                                               txtlongitude.setText(String.valueOf(location.getLongitude()));
+                                               System.out.println("---------------------");
+
+
+                                           }catch(SecurityException ex){
+                                               ex.printStackTrace();
+                                           }
+
+                                       }
+                                   }
+                               });
+
+
+                alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Store store = new Store(txtstorename.getText().toString());
+                        storesList.add(store);
+                        storeAdapter.notifyDataSetChanged();
+
+
+                        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                                != PackageManager.PERMISSION_GRANTED) {
+                            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, RQ_WRITE_STORAGE);
+                        } else {
+                            writeToFile("shoppingList");
+                        }
+
+                    }
+                });
         alert.setNegativeButton("cancel", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -216,7 +274,6 @@ public class MainActivity extends AppCompatActivity {
         try {
             PrintWriter out = new PrintWriter((new OutputStreamWriter(new FileOutputStream(fullPath))));
             String sJson = gson.toJson(storesList);
-            Toast.makeText(this, sJson, Toast.LENGTH_LONG).show();
             out.write(sJson);
             out.flush();
             out.close();
@@ -242,9 +299,13 @@ public class MainActivity extends AppCompatActivity {
                 sJson = in.readLine();
                 in.close();
 
+
                 Gson gson = new Gson();
-                Store store = gson.fromJson(sJson, Store.class);
-                Toast.makeText(this, store.getPosition().toString(), Toast.LENGTH_LONG).show();
+                TypeToken<List<Store>> storeinput = new TypeToken<List<Store>>(){};
+                //storesList = gson.fromJson(sJson, storeinput.getType());
+                storeAdapter.notifyDataSetChanged();
+                positionsAdapter.notifyDataSetChanged();
+
 
             }catch(Exception e){
                 e.printStackTrace();
@@ -254,15 +315,21 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
-        public void printInput(View view){
-        if(checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                !=PackageManager.PERMISSION_GRANTED){
-            requestPermissions(new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE}, RQ_WRITE_STORAGE);
-        }else{
-            writeToFile("shoppingList");
-        }
+        private void registerSystemService(){
+                locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         }
 
+       private void checkpermissionGPS(){
+           String permission = Manifest.permission.ACCESS_FINE_LOCATION;
+           if(ActivityCompat.checkSelfPermission(this, permission)!=PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[] {permission}, RQ_ACCESS_FINE_LOCATION);
+         }else{
+             gpsGranted();
+          }
+        }
+
+
+        @Override
         public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults){
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
             if(requestCode==RQ_WRITE_STORAGE){
@@ -271,8 +338,20 @@ public class MainActivity extends AppCompatActivity {
                 }else{
                     writeToFile("shoppingList");
                 }
+            }else if(requestCode==RQ_ACCESS_FINE_LOCATION){
+                if(grantResults.length > 0 && grantResults[0] != PackageManager.PERMISSION_GRANTED){
+                    Toast.makeText(this, "Permission denied!", Toast.LENGTH_LONG);
+                }else{
+                    gpsGranted();
+                }
             }
+
         }
+
+        private void gpsGranted(){
+        isGpsAllowed = true;
+        }
+
     }
 
 
