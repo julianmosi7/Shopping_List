@@ -187,18 +187,15 @@ public class MainActivity extends AppCompatActivity {
         final Button btn = vDialog.findViewById(R.id.coordinates_button);
         alert.setView(vDialog);
 
+
         btn.setOnClickListener(new View.OnClickListener() {
                                    @Override
                                    public void onClick(View v) {
                                        if(isGpsAllowed){
                                            try {
                                                Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                                               System.out.println(location);
-                                               System.out.println(location.getLatitude());
-                                               System.out.println(location.getLongitude());
                                                txtlatitude.setText(String.valueOf(location.getLatitude()));
                                                txtlongitude.setText(String.valueOf(location.getLongitude()));
-                                               System.out.println("---------------------");
 
 
                                            }catch(SecurityException ex){
@@ -213,7 +210,7 @@ public class MainActivity extends AppCompatActivity {
                 alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        Store store = new Store(txtstorename.getText().toString());
+                        Store store = new Store(txtstorename.getText().toString(), Double.parseDouble(txtlatitude.getText().toString()), Double.parseDouble(txtlongitude.getText().toString()));
                         storesList.add(store);
                         storeAdapter.notifyDataSetChanged();
 

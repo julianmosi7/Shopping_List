@@ -5,10 +5,14 @@ import java.util.List;
 
 public class Store {
     public String name;
+    public double latitude;
+    public double longitude;
     public List<Position> position = new ArrayList<>();
 
-    public Store(String name) {
+    public Store(String name, double latitude, double longitude) {
         this.name = name;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 
     public String getName() {
@@ -31,7 +35,24 @@ public class Store {
         position.add(pos);
     }
 
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    }
+
+    public double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
+    }
+
     public String toString(){
         return name;
     }
+
 }
