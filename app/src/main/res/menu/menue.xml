@@ -13,5 +13,10 @@
         android:icon="@android:drawable/ic_menu_add"
         android:title="@string/addStore"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/menu_preferences"
+        android:icon="@android:drawable/ic_menu_preferences"
+        android:title="@string/preferences"
+        app:showAsAction="never" />
 
 </menu>

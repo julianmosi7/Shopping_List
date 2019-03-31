@@ -2,6 +2,7 @@ package com.calculate.shoppinglist;
 
 import android.Manifest;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
@@ -122,6 +123,9 @@ public class MainActivity extends AppCompatActivity {
             case R.id.menu_addStore:
                 dialog_store();
                 break;
+            case R.id.menu_preferences:
+                Intent intent = new Intent(this, MySettingsActivity.class);
+                startActivityForResult(intent, 0);
         }
         return super.onOptionsItemSelected(item);
     }

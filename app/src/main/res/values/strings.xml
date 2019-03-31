@@ -3,4 +3,5 @@
     <string name="addPosition">add Position</string>
     <string name="addStore">add Store</string>
     <string name="context_delete">Delete Item</string>
+    <string name="preferences">Preferences</string>
 </resources>
