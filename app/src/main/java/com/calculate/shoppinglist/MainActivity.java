@@ -1,6 +1,10 @@
 package com.calculate.shoppinglist;
 
 import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -9,6 +13,7 @@ import android.location.LocationManager;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -23,6 +28,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.NumberPicker;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -69,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
         registerSystemService();
 
         checkpermissionGPS();
+        getNotification();
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -96,6 +103,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart(){
         super.onStart();
         isJSONavailable("shoppingList");
+        getNotification();
     }
 
 
@@ -136,6 +144,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void dialog_position(){
+        if(isGpsAllowed){
+            try {
+                Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                for (Store store:
+                     storesList) {
+                    if(((location.getLongitude()-store.getLongitude() < 100)&&(location.getLongitude()-store.getLongitude() > -100))&&((location.getLatitude()-store.getLatitude() < 100)&&location.getLatitude()-store.getLatitude() > -100)&&(!store.getPosition().isEmpty())){
+                        dialog_note(store.getName());
+                    }
+                }
+
+            }catch(SecurityException ex){
+                ex.printStackTrace();
+            }
+
+        }
+
+        getNotification();
         final View vDialog = getLayoutInflater().inflate(R.layout.dialog_position, null);
         AlertDialog.Builder alert = new AlertDialog.Builder(this);
         alert.setMessage("add new Position");
@@ -352,6 +377,41 @@ public class MainActivity extends AppCompatActivity {
         private void gpsGranted(){
         isGpsAllowed = true;
         }
+
+        private void getNotification(){
+            //final Intent intent = new Intent(this, MainActivity.class);
+            //PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+            NotificationChannel channel = new NotificationChannel("1", "channel", NotificationManager.IMPORTANCE_DEFAULT);
+            channel.setDescription("description");
+            System.out.println("build");
+            NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
+                    .setDefaults(NotificationCompat.DEFAULT_ALL)
+                    .setWhen(System.currentTimeMillis())
+                    .setSmallIcon(android.R.drawable.ic_input_add)
+                    .setContentTitle("Store!")
+                    .setContentText("You are near a store!");
+
+
+            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManager.createNotificationChannel(channel);
+            notificationManager.notify(1, mBuilder.build());
+
+        }
+
+    private void dialog_note(String name){
+        getNotification();
+        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+        alert.setMessage("You are near " + name + "!");
+
+        alert.setNeutralButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+            }
+        });
+        alert.show();
+    }
 
     }
 
