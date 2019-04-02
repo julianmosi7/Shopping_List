@@ -125,11 +125,13 @@ public class MainActivity extends AppCompatActivity {
         super.onPostResume();
         try{
             if(isGpsAllowed) {
-                locationManager.requestLocationUpdates(
-                        LocationManager.GPS_PROVIDER,
-                        1000,
-                        0,
-                        locationListener);
+                if(prefs.getBoolean("online", true)){
+                    locationManager.requestLocationUpdates(
+                            LocationManager.GPS_PROVIDER,
+                            1000,
+                            0,
+                            locationListener);
+                }
             }
         }catch(SecurityException ex){
             ex.printStackTrace();
