@@ -1,5 +1,7 @@
 package com.calculate.shoppinglist;
 
+import android.location.Location;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,6 +9,7 @@ public class Store {
     public String name;
     public double latitude;
     public double longitude;
+    Location location = new Location("end");
     public List<Position> position = new ArrayList<>();
 
     public Store(String name, double latitude, double longitude) {
@@ -53,6 +56,12 @@ public class Store {
 
     public String toString(){
         return name;
+    }
+
+    public Location getLocation(){
+        location.setLatitude(latitude);
+        location.setLongitude(longitude);
+        return location;
     }
 
 }

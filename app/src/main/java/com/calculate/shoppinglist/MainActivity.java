@@ -1,19 +1,26 @@
 package com.calculate.shoppinglist;
 
 import android.Manifest;
+
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -55,6 +62,9 @@ public class MainActivity extends AppCompatActivity {
     LocationManager locationManager;
     private static final int RQ_ACCESS_FINE_LOCATION = 123;
     private boolean isGpsAllowed = false;
+    LocationListener locationListener;
+    private SharedPreferences prefs;
+    private String channelID = "10";
 
     public ArrayAdapter<Position> positionsAdapter;
     public ArrayAdapter<Store> storeAdapter;
@@ -75,7 +85,11 @@ public class MainActivity extends AppCompatActivity {
         registerSystemService();
 
         checkpermissionGPS();
-        getNotification();
+
+        createNotificationChannel();
+
+        prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -96,6 +110,7 @@ public class MainActivity extends AppCompatActivity {
             public void onNothingSelected(AdapterView<?> parent) {
 
             }
+
         });
     }
 
@@ -103,7 +118,44 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart(){
         super.onStart();
         isJSONavailable("shoppingList");
-        getNotification();
+    }
+
+    @Override
+    protected void onResume(){
+        super.onPostResume();
+        try{
+            if(isGpsAllowed) {
+                locationManager.requestLocationUpdates(
+                        LocationManager.GPS_PROVIDER,
+                        1000,
+                        0,
+                        locationListener);
+            }
+        }catch(SecurityException ex){
+            ex.printStackTrace();
+        }
+        super.onResume();
+
+    }
+
+    @Override
+    protected void onPause(){
+        super.onPause();
+        if(isGpsAllowed)locationManager.removeUpdates(locationListener);
+    }
+
+    private void createNotificationChannel(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "My Channel";
+            String description = "My Description";
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(channelID, name, importance);
+            channel.setDescription(description);
+
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+
     }
 
 
@@ -144,23 +196,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void dialog_position(){
-        if(isGpsAllowed){
-            try {
-                Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                for (Store store:
-                     storesList) {
-                    if(((location.getLongitude()-store.getLongitude() < 100)&&(location.getLongitude()-store.getLongitude() > -100))&&((location.getLatitude()-store.getLatitude() < 100)&&location.getLatitude()-store.getLatitude() > -100)&&(!store.getPosition().isEmpty())){
-                        dialog_note(store.getName());
-                    }
-                }
-
-            }catch(SecurityException ex){
-                ex.printStackTrace();
-            }
-
-        }
-
-        getNotification();
         final View vDialog = getLayoutInflater().inflate(R.layout.dialog_position, null);
         AlertDialog.Builder alert = new AlertDialog.Builder(this);
         alert.setMessage("add new Position");
@@ -225,6 +260,7 @@ public class MainActivity extends AppCompatActivity {
                                                Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                                                txtlatitude.setText(String.valueOf(location.getLatitude()));
                                                txtlongitude.setText(String.valueOf(location.getLongitude()));
+
 
 
                                            }catch(SecurityException ex){
@@ -375,34 +411,70 @@ public class MainActivity extends AppCompatActivity {
         }
 
         private void gpsGranted(){
-        isGpsAllowed = true;
+            isGpsAllowed = true;
+            locationListener = new LocationListener() {
+                @Override
+                public void onLocationChanged(Location location) {
+                    if(isGpsAllowed){
+                        try {
+                            for (Store store:
+                                    storesList) {
+                                if((location.distanceTo(store.getLocation()) < 500)&&(!store.getPosition().isEmpty())){
+                                    getNotification(store.getName());
+                                }
+                            }
+
+                        }catch(SecurityException ex){
+                            ex.printStackTrace();
+                        }
+
+                    }
+                }
+
+                @Override
+                public void onStatusChanged(String provider, int status, Bundle extras) {
+
+                }
+
+                @Override
+                public void onProviderEnabled(String provider) {
+
+                }
+
+                @Override
+                public void onProviderDisabled(String provider) {
+
+                }
+            };
         }
 
-        private void getNotification(){
-            //final Intent intent = new Intent(this, MainActivity.class);
-            //PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        private void getNotification(String name){
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
-            NotificationChannel channel = new NotificationChannel("1", "channel", NotificationManager.IMPORTANCE_DEFAULT);
+            NotificationChannel channel = new NotificationChannel("channelID", "channel", NotificationManager.IMPORTANCE_DEFAULT);
             channel.setDescription("description");
             System.out.println("build");
-            NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
+            System.out.println("------------------");
+            NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this, channelID)
                     .setDefaults(NotificationCompat.DEFAULT_ALL)
                     .setWhen(System.currentTimeMillis())
-                    .setSmallIcon(android.R.drawable.ic_input_add)
+                    .setSmallIcon(R.drawable.ic_local_grocery_store_black_24dp)
                     .setContentTitle("Store!")
-                    .setContentText("You are near a store!");
+                    .setContentText("You are near " + name + "!")
+                    .setContentIntent(contentIntent)
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
-
-            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            notificationManager.createNotificationChannel(channel);
-            notificationManager.notify(1, mBuilder.build());
+            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+            notificationManager.notify(10, mBuilder.build());
 
         }
 
     private void dialog_note(String name){
-        getNotification();
         AlertDialog.Builder alert = new AlertDialog.Builder(this);
         alert.setMessage("You are near " + name + "!");
+
 
         alert.setNeutralButton("OK", new DialogInterface.OnClickListener() {
             @Override
@@ -412,6 +484,7 @@ public class MainActivity extends AppCompatActivity {
         });
         alert.show();
     }
+
 
     }
 
